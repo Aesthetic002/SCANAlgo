@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Elevator | SCAN Algorithm Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="landing.css">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+        <div class="bg-grid"></div>
+    </div>
+
+    <!-- Tubelight Navbar -->
+    <nav class="tubelight-navbar">
+        <div class="nav-pill">
+            <a href="#" class="nav-item active" data-section="hero">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span class="nav-text">Home</span>
+                <div class="lamp-effect">
+                    <div class="lamp-bar"></div>
+                    <div class="lamp-glow"></div>
+                </div>
+            </a>
+            <a href="#features" class="nav-item" data-section="features">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                <span class="nav-text">Features</span>
+                <div class="lamp-effect">
+                    <div class="lamp-bar"></div>
+                    <div class="lamp-glow"></div>
+                </div>
+            </a>
+            <a href="#comparison" class="nav-item" data-section="comparison">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                <span class="nav-text">Compare</span>
+                <div class="lamp-effect">
+                    <div class="lamp-bar"></div>
+                    <div class="lamp-glow"></div>
+                </div>
+            </a>
+            <a href="#how-it-works" class="nav-item" data-section="how-it-works">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span class="nav-text">How It Works</span>
+                <div class="lamp-effect">
+                    <div class="lamp-bar"></div>
+                    <div class="lamp-glow"></div>
+                </div>
+            </a>
+            <a href="simulation.html" class="nav-item nav-cta-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span class="nav-text">Simulate</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-icon">⚡</span>
+                <span>Revolutionary Elevator Scheduling</span>
+            </div>
+
+            <h1 class="hero-title">
+                <span class="title-line">Experience the Power of</span>
+                <span class="title-animated">
+                    <span class="word-container">
+                        <span class="animated-word" id="animatedWord">SCAN Algorithm</span>
+                    </span>
+                </span>
+            </h1>
+
+            <p class="hero-description">
+                Discover how modern elevator systems optimize floor scheduling using the SCAN algorithm,
+                achieving up to <strong>40% better efficiency</strong> compared to conventional methods.
+            </p>
+
+            <div class="hero-actions">
+                <a href="simulation.html" class="btn btn-primary">
+                    <span>Launch Simulation</span>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="#comparison" class="btn btn-secondary">
+                    <span>See Comparison</span>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                </a>
+            </div>
+
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-value">40%</span>
+                    <span class="stat-label">More Efficient</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-value">8</span>
+                    <span class="stat-label">Floors Simulated</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-value">Real-time</span>
+                    <span class="stat-label">Visualization</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Visual -->
+        <div class="hero-visual">
+            <div class="elevator-demo">
+                <div class="demo-shaft">
+                    <div class="demo-floor" data-floor="7">7</div>
+                    <div class="demo-floor" data-floor="6">6</div>
+                    <div class="demo-floor" data-floor="5">5</div>
+                    <div class="demo-floor" data-floor="4">4</div>
+                    <div class="demo-floor" data-floor="3">3</div>
+                    <div class="demo-floor" data-floor="2">2</div>
+                    <div class="demo-floor" data-floor="1">1</div>
+                    <div class="demo-floor" data-floor="0">0</div>
+                    <div class="demo-car" id="demoCar">
+                        <span class="car-label">▲</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">Features</span>
+                <h2 class="section-title">Why SCAN Algorithm?</h2>
+                <p class="section-subtitle">The same technology used in disk I/O scheduling, adapted for elevators</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Optimized Path</h3>
+                    <p>Serves all requests in one direction before reversing, minimizing unnecessary travel.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚖️</div>
+                    <h3>Fair Scheduling</h3>
+                    <p>No request starvation - every floor request is guaranteed to be served.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>40% Faster</h3>
+                    <p>Dramatically reduces total floor traversals compared to First-Come-First-Serve.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Predictable</h3>
+                    <p>Users can easily predict when the elevator will reach their floor.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌱</div>
+                    <h3>Energy Efficient</h3>
+                    <p>Fewer motor direction changes means less wear and lower energy consumption.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏢</div>
+                    <h3>Industry Standard</h3>
+                    <p>Used in real-world elevators across commercial and residential buildings.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison" id="comparison">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">Comparison</span>
+                <h2 class="section-title">SCAN vs Conventional (FCFS)</h2>
+                <p class="section-subtitle">See the difference in real numbers</p>
+            </div>
+
+            <div class="comparison-container">
+                <!-- SCAN Side -->
+                <div class="algo-card scan-card">
+                    <div class="algo-header">
+                        <span class="algo-badge scan-badge">SCAN Algorithm</span>
+                        <span class="algo-label">Smart Scheduling</span>
+                    </div>
+
+                    <div class="algo-visual">
+                        <div class="path-demo">
+                            <div class="path-line scan-path"></div>
+                            <div class="path-points">
+                                <span class="path-point" style="bottom: 0%">0</span>
+                                <span class="path-point active" style="bottom: 28.5%">2</span>
+                                <span class="path-point active" style="bottom: 42.8%">3</span>
+                                <span class="path-point active" style="bottom: 71.4%">5</span>
+                                <span class="path-point active" style="bottom: 100%">7</span>
+                            </div>
+                            <svg class="path-svg" viewBox="0 0 100 200">
+                                <path class="scan-line" d="M50 180 L50 140 L50 120 L50 80 L50 20"
+                                    stroke="url(#scanGradient)" stroke-width="3" fill="none" />
+                                <defs>
+                                    <linearGradient id="scanGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                                        <stop offset="0%" stop-color="#3b82f6" />
+                                        <stop offset="100%" stop-color="#06b6d4" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="algo-stats">
+                        <div class="algo-stat">
+                            <span class="algo-stat-value">7</span>
+                            <span class="algo-stat-label">Floors Traveled</span>
+                        </div>
+                        <div class="algo-stat">
+                            <span class="algo-stat-value">1</span>
+                            <span class="algo-stat-label">Direction Change</span>
+                        </div>
+                    </div>
+
+                    <ul class="algo-pros">
+                        <li>✓ Efficient sweep pattern</li>
+                        <li>✓ Minimal direction changes</li>
+                        <li>✓ Predictable behavior</li>
+                        <li>✓ No request starvation</li>
+                    </ul>
+                </div>
+
+                <!-- VS Badge -->
+                <div class="vs-badge">VS</div>
+
+                <!-- FCFS Side -->
+                <div class="algo-card fcfs-card">
+                    <div class="algo-header">
+                        <span class="algo-badge fcfs-badge">FCFS Algorithm</span>
+                        <span class="algo-label">First-Come-First-Serve</span>
+                    </div>
+
+                    <div class="algo-visual">
+                        <div class="path-demo">
+                            <div class="path-line fcfs-path"></div>
+                            <div class="path-points">
+                                <span class="path-point" style="bottom: 0%">0</span>
+                                <span class="path-point active" style="bottom: 28.5%">2</span>
+                                <span class="path-point active" style="bottom: 42.8%">3</span>
+                                <span class="path-point active" style="bottom: 71.4%">5</span>
+                                <span class="path-point active" style="bottom: 100%">7</span>
+                            </div>
+                            <svg class="path-svg" viewBox="0 0 100 200">
+                                <path class="fcfs-line" d="M50 180 L50 20 L50 180 L50 80 L50 120"
+                                    stroke="url(#fcfsGradient)" stroke-width="3" fill="none" stroke-dasharray="5,5" />
+                                <defs>
+                                    <linearGradient id="fcfsGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                                        <stop offset="0%" stop-color="#f97316" />
+                                        <stop offset="100%" stop-color="#ef4444" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="algo-stats">
+                        <div class="algo-stat">
+                            <span class="algo-stat-value fcfs-value">19</span>
+                            <span class="algo-stat-label">Floors Traveled</span>
+                        </div>
+                        <div class="algo-stat">
+                            <span class="algo-stat-value fcfs-value">3</span>
+                            <span class="algo-stat-label">Direction Changes</span>
+                        </div>
+                    </div>
+
+                    <ul class="algo-cons">
+                        <li>✗ Wasteful zigzag pattern</li>
+                        <li>✗ Frequent direction changes</li>
+                        <li>✗ Unpredictable wait times</li>
+                        <li>✗ Higher energy consumption</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="comparison-result">
+                <div class="result-box">
+                    <span class="result-label">SCAN Efficiency Gain</span>
+                    <span class="result-value">+63%</span>
+                    <span class="result-detail">fewer floors traveled in this example scenario</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-tag">How It Works</span>
+                <h2 class="section-title">The SCAN Algorithm Explained</h2>
+                <p class="section-subtitle">Simple yet powerful scheduling logic</p>
+            </div>
+
+            <div class="steps-container">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3>Collect Requests</h3>
+                    <p>Multiple floor requests come in from passengers waiting on different floors.</p>
+                </div>
+                <div class="step-connector">→</div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3>Choose Direction</h3>
+                    <p>Elevator picks a direction (UP or DOWN) based on pending requests.</p>
+                </div>
+                <div class="step-connector">→</div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3>Sweep & Serve</h3>
+                    <p>Serves ALL requests in that direction before reversing.</p>
+                </div>
+                <div class="step-connector">→</div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h3>Reverse</h3>
+                    <p>At the end, reverses direction and repeats the process.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="cta-container">
+            <div class="cta-content">
+                <h2>Ready to See It in Action?</h2>
+                <p>Experience the real-time comparison between SCAN and FCFS algorithms with our interactive simulation.
+                </p>
+                <a href="simulation.html" class="btn btn-primary btn-large">
+                    <span>Launch Interactive Simulation</span>
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+            <div class="cta-visual">
+                <div class="cta-elevator">
+                    <div class="cta-shaft">
+                        <div class="cta-car"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <span class="footer-logo">🏢 SmartElevator</span>
+                <p>A Digital Logic Design Project demonstrating the SCAN scheduling algorithm.</p>
+            </div>
+            <div class="footer-links">
+                <a href="simulation.html">Simulation</a>
+                <a href="#features">Features</a>
+                <a href="#comparison">Comparison</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Built with ❤️ for ADLD Project • SCAN Algorithm Elevator Controller</p>
+        </div>
+    </footer>
+
+    <script src="landing.js"></script>
+</body>
+
+</html>

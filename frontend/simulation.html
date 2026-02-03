@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevator Algorithm Comparison | SCAN vs FCFS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Animated Background -->
+        <div class="bg-animation">
+            <div class="bg-orb orb-1"></div>
+            <div class="bg-orb orb-2"></div>
+            <div class="bg-orb orb-3"></div>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <span class="logo-icon">🏢</span>
+                    <div class="logo-text">
+                        <h1>Elevator Algorithm Comparison</h1>
+                        <p class="subtitle">SCAN (Smart) vs FCFS (Conventional)</p>
+                    </div>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-badge">
+                        <span class="stat-icon">📊</span>
+                        <span>Live Comparison</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Elevators Comparison Section -->
+            <section class="elevators-section">
+                <!-- SCAN Elevator -->
+                <div class="elevator-column scan-column">
+                    <div class="elevator-header">
+                        <div class="elevator-badge scan-badge">
+                            <span class="badge-icon">⚡</span>
+                            <span class="badge-text">SCAN Algorithm</span>
+                        </div>
+                        <span class="elevator-subtitle">Smart Scheduling</span>
+                    </div>
+
+                    <div class="elevator-container">
+                        <div class="floor-labels">
+                            <div class="floor-label">7</div>
+                            <div class="floor-label">6</div>
+                            <div class="floor-label">5</div>
+                            <div class="floor-label">4</div>
+                            <div class="floor-label">3</div>
+                            <div class="floor-label">2</div>
+                            <div class="floor-label">1</div>
+                            <div class="floor-label">0</div>
+                        </div>
+
+                        <div class="elevator-shaft" id="scanShaft">
+                            <div class="floor-indicator floor-7" data-elevator="scan"></div>
+                            <div class="floor-indicator floor-6" data-elevator="scan"></div>
+                            <div class="floor-indicator floor-5" data-elevator="scan"></div>
+                            <div class="floor-indicator floor-4" data-elevator="scan"></div>
+                            <div class="floor-indicator floor-3" data-elevator="scan"></div>
+                            <div class="floor-indicator floor-2" data-elevator="scan"></div>
+                            <div class="floor-indicator floor-1" data-elevator="scan"></div>
+                            <div class="floor-indicator floor-0" data-elevator="scan"></div>
+
+                            <div class="elevator-car" id="scanCar">
+                                <div class="elevator-door left-door"></div>
+                                <div class="elevator-door right-door"></div>
+                                <div class="elevator-interior">
+                                    <div class="direction-arrow" id="scanArrow">▲</div>
+                                    <div class="floor-display" id="scanFloorDisplay">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SCAN Stats -->
+                    <div class="elevator-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Floors Traveled</span>
+                            <span class="stat-value" id="scanFloorsCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Requests Served</span>
+                            <span class="stat-value" id="scanServedCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">State</span>
+                            <span class="stat-value state-tag" id="scanState">IDLE</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Center Control Panel -->
+                <div class="center-panel">
+                    <!-- Floor Request Buttons -->
+                    <div class="panel floor-panel">
+                        <h2>🔢 Request Floor</h2>
+                        <p class="panel-hint">Requests sent to both elevators</p>
+                        <div class="floor-buttons">
+                            <button class="floor-btn" data-floor="7">7</button>
+                            <button class="floor-btn" data-floor="6">6</button>
+                            <button class="floor-btn" data-floor="5">5</button>
+                            <button class="floor-btn" data-floor="4">4</button>
+                            <button class="floor-btn" data-floor="3">3</button>
+                            <button class="floor-btn" data-floor="2">2</button>
+                            <button class="floor-btn" data-floor="1">1</button>
+                            <button class="floor-btn" data-floor="0">0</button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="panel actions-panel">
+                        <h2>⚡ Quick Actions</h2>
+                        <div class="action-buttons">
+                            <button class="action-btn" id="randomBtn">
+                                <span class="action-icon">🎲</span>
+                                <span>Random 3 Floors</span>
+                            </button>
+                            <button class="action-btn" id="resetBtn">
+                                <span class="action-icon">🔄</span>
+                                <span>Reset Both</span>
+                            </button>
+                            <button class="action-btn emergency-action" id="emergencyBtn">
+                                <span class="action-icon">🚨</span>
+                                <span>Emergency Stop</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Metrics -->
+                    <div class="panel comparison-panel">
+                        <h2>� Comparison</h2>
+                        <div class="comparison-metrics">
+                            <div class="metric-row">
+                                <span class="metric-label">Total Floors</span>
+                                <div class="metric-bar-container">
+                                    <div class="metric-bar scan-bar" id="scanBar" style="width: 50%"></div>
+                                    <div class="metric-bar fcfs-bar" id="fcfsBar" style="width: 50%"></div>
+                                </div>
+                                <div class="metric-values">
+                                    <span class="scan-value" id="scanTotal">0</span>
+                                    <span class="fcfs-value" id="fcfsTotal">0</span>
+                                </div>
+                            </div>
+                            <div class="efficiency-display">
+                                <span class="efficiency-label">SCAN Efficiency</span>
+                                <span class="efficiency-value" id="efficiencyValue">--%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Request Queue -->
+                    <div class="panel queue-panel">
+                        <h2>📋 Pending Requests</h2>
+                        <div class="queue-display" id="queueDisplay">
+                            <span class="no-requests">No pending requests</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FCFS Elevator -->
+                <div class="elevator-column fcfs-column">
+                    <div class="elevator-header">
+                        <div class="elevator-badge fcfs-badge">
+                            <span class="badge-icon">📝</span>
+                            <span class="badge-text">FCFS Algorithm</span>
+                        </div>
+                        <span class="elevator-subtitle">First-Come-First-Serve</span>
+                    </div>
+
+                    <div class="elevator-container">
+                        <div class="elevator-shaft" id="fcfsShaft">
+                            <div class="floor-indicator floor-7" data-elevator="fcfs"></div>
+                            <div class="floor-indicator floor-6" data-elevator="fcfs"></div>
+                            <div class="floor-indicator floor-5" data-elevator="fcfs"></div>
+                            <div class="floor-indicator floor-4" data-elevator="fcfs"></div>
+                            <div class="floor-indicator floor-3" data-elevator="fcfs"></div>
+                            <div class="floor-indicator floor-2" data-elevator="fcfs"></div>
+                            <div class="floor-indicator floor-1" data-elevator="fcfs"></div>
+                            <div class="floor-indicator floor-0" data-elevator="fcfs"></div>
+
+                            <div class="elevator-car fcfs-car" id="fcfsCar">
+                                <div class="elevator-door left-door"></div>
+                                <div class="elevator-door right-door"></div>
+                                <div class="elevator-interior">
+                                    <div class="direction-arrow" id="fcfsArrow">▲</div>
+                                    <div class="floor-display" id="fcfsFloorDisplay">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="floor-labels right-labels">
+                            <div class="floor-label">7</div>
+                            <div class="floor-label">6</div>
+                            <div class="floor-label">5</div>
+                            <div class="floor-label">4</div>
+                            <div class="floor-label">3</div>
+                            <div class="floor-label">2</div>
+                            <div class="floor-label">1</div>
+                            <div class="floor-label">0</div>
+                        </div>
+                    </div>
+
+                    <!-- FCFS Stats -->
+                    <div class="elevator-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Floors Traveled</span>
+                            <span class="stat-value" id="fcfsFloorsCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Requests Served</span>
+                            <span class="stat-value" id="fcfsServedCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">State</span>
+                            <span class="stat-value state-tag" id="fcfsState">IDLE</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Info Section -->
+            <section class="info-section">
+                <div class="info-card scan-info">
+                    <h3>⚡ SCAN Algorithm</h3>
+                    <p>Moves in one direction serving all requests, then reverses. Like a disk head sweep.</p>
+                    <ul>
+                        <li>✓ Efficient path planning</li>
+                        <li>✓ No request starvation</li>
+                        <li>✓ ~40% fewer floor traversals</li>
+                    </ul>
+                </div>
+                <div class="info-card fcfs-info">
+                    <h3>📝 FCFS Algorithm</h3>
+                    <p>Serves requests in the exact order they arrive. Simple but inefficient.</p>
+                    <ul>
+                        <li>✗ May zigzag between floors</li>
+                        <li>✗ High average wait time</li>
+                        <li>✗ Poor for high traffic</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <!-- Alarm Overlay -->
+        <div class="alarm-overlay" id="alarmOverlay">
+            <div class="alarm-content">
+                <span class="alarm-icon">🚨</span>
+                <span class="alarm-text">EMERGENCY STOP</span>
+                <button class="alarm-dismiss" id="dismissAlarm">Click to Resume</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="elevator.js"></script>
+</body>
+
+</html>
