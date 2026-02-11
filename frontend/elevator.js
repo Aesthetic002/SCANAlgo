@@ -334,6 +334,216 @@ class FcfsElevator extends BaseElevator {
 }
 
 // ==============================================================================
+// Remote Verilog Elevator (Connects to Backend)
+// ==============================================================================
+class RemoteScanElevator extends BaseElevator {
+    constructor(config) {
+        super('scan', config);
+        this.socket = null;
+        this.isConnected = false;
+        this.stepping = false;
+        this.connectionAttempts = 0;
+        this.maxAttempts = 2; // Fall back after 2 failed attempts
+        this.fallbackMode = false;
+        this.fallbackElevator = null;
+        this.connect();
+    }
+
+    connect() {
+        if (this.fallbackMode) return;
+
+        try {
+            this.socket = new WebSocket('ws://localhost:8766');
+        } catch (e) {
+            console.warn("WebSocket not available, using JS fallback");
+            this.activateFallback();
+            return;
+        }
+
+        this.socket.onopen = () => {
+            console.log("Connected to Verilog Backend");
+            this.isConnected = true;
+            this.connectionAttempts = 0;
+            this.socket.send(JSON.stringify({ type: 'reset' }));
+            this.stepping = true;
+            this.processNextState();
+        };
+
+        this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.updateStateFromBackend(data);
+        };
+
+        this.socket.onerror = () => {
+            console.warn("WebSocket connection error");
+        };
+
+        this.socket.onclose = () => {
+            console.log("Disconnected from Backend");
+            this.isConnected = false;
+            this.stepping = false;
+            this.connectionAttempts++;
+
+            if (this.connectionAttempts >= this.maxAttempts) {
+                console.log("Backend unavailable, switching to JS SCAN logic");
+                this.activateFallback();
+            } else {
+                setTimeout(() => this.connect(), 2000);
+            }
+        };
+    }
+
+    activateFallback() {
+        this.fallbackMode = true;
+        console.log("🔄 Running SCAN in JavaScript mode (no Verilog backend)");
+    }
+
+    // SCAN algorithm fallback (same as ScanElevator)
+    getNextTarget() {
+        if (this.pendingRequests.length === 0) return this.currentFloor;
+
+        let inDirection = [];
+        let otherDirection = [];
+
+        if (this.direction === DIRECTION.UP) {
+            inDirection = this.pendingRequests
+                .filter(f => f >= this.currentFloor)
+                .sort((a, b) => a - b);
+            otherDirection = this.pendingRequests
+                .filter(f => f < this.currentFloor)
+                .sort((a, b) => b - a);
+        } else {
+            inDirection = this.pendingRequests
+                .filter(f => f <= this.currentFloor)
+                .sort((a, b) => b - a);
+            otherDirection = this.pendingRequests
+                .filter(f => f > this.currentFloor)
+                .sort((a, b) => a - b);
+        }
+
+        if (inDirection.length > 0) {
+            return inDirection[0];
+        } else if (otherDirection.length > 0) {
+            this.direction = this.direction === DIRECTION.UP ? DIRECTION.DOWN : DIRECTION.UP;
+            return otherDirection[0];
+        }
+
+        return this.currentFloor;
+    }
+
+    // Override: Send request to backend or use local logic
+    addRequest(floor) {
+        if (this.fallbackMode) {
+            // Use base class SCAN logic
+            super.addRequest(floor);
+            return;
+        }
+        if (floor < 0 || floor > 7 || this.emergency) return;
+        if (this.isConnected) {
+            this.socket.send(JSON.stringify({ type: 'request', floor: floor }));
+            if (!this.pendingRequests.includes(floor)) {
+                this.pendingRequests.push(floor);
+                this.updateFloorIndicators();
+            }
+        }
+    }
+
+    // Override: Emergency
+    setEmergency(active) {
+        if (this.fallbackMode) {
+            super.setEmergency(active);
+            return;
+        }
+        if (this.isConnected) {
+            this.socket.send(JSON.stringify({ type: 'emergency', value: active }));
+        }
+    }
+
+    // Override: Reset
+    reset() {
+        if (this.isConnected && !this.fallbackMode) {
+            this.socket.send(JSON.stringify({ type: 'reset' }));
+        }
+        super.reset();
+    }
+
+    // Override: Main Loop
+    processNextState() {
+        if (this.fallbackMode) {
+            // Use base class state machine
+            super.processNextState();
+            return;
+        }
+        if (this.isConnected && !this.emergency) {
+            this.socket.send(JSON.stringify({ type: 'step' }));
+        } else if (!this.isConnected) {
+            console.warn("Skipping step: Not connected");
+        }
+
+        // Schedule next update
+        if (this.state === STATES.MOVE) {
+            setTimeout(() => this.processNextState(), 100); // 100ms per step
+        } else {
+            setTimeout(() => this.processNextState(), 200); // Slower when idle
+        }
+    }
+
+    openDoor() {
+        super.openDoor();
+        // Backend handles timing, frontend just visualizes
+    }
+
+    updateStateFromBackend(data) {
+        // Map backend state enum to frontend string
+        const stateMap = {
+            0: STATES.IDLE,
+            1: STATES.MOVE,
+            2: STATES.ARRIVE,
+            3: STATES.DOOR_OPEN,
+            4: STATES.DOOR_WAIT,
+            5: STATES.EMERGENCY,
+            6: 'OVERLOAD'
+        };
+
+        const prevFloor = this.currentFloor;
+        const prevState = this.state;
+
+        this.state = stateMap[data.STATE] || STATES.IDLE;
+        this.currentFloor = data.FLOOR;
+        this.direction = data.DIR === 1 ? DIRECTION.UP : DIRECTION.DOWN;
+
+        // Track floors traversed
+        if (this.currentFloor !== prevFloor) {
+            this.floorsTraversed += Math.abs(this.currentFloor - prevFloor);
+        }
+
+        // Clear request when door opens at a floor
+        if (this.state === STATES.DOOR_OPEN || this.state === STATES.DOOR_WAIT) {
+            const index = this.pendingRequests.indexOf(this.currentFloor);
+            if (index > -1) {
+                this.pendingRequests.splice(index, 1);
+                this.requestsServed++;
+            }
+            this.car.classList.add('door-open');
+        } else {
+            this.car.classList.remove('door-open');
+        }
+
+        // Emergency flag sync
+        if (this.state === STATES.EMERGENCY) {
+            this.emergency = true;
+        } else if (this.emergency && this.state !== STATES.EMERGENCY) {
+            this.emergency = false;
+        }
+
+        this.updatePosition();
+        this.updateFloorIndicators();
+        this.updateUI();
+    }
+}
+
+
+// ==============================================================================
 // Comparison Controller
 // ==============================================================================
 class ElevatorComparison {
@@ -344,7 +554,7 @@ class ElevatorComparison {
             doorWaitTime: 400
         };
 
-        this.scanElevator = new ScanElevator(config);
+        this.scanElevator = new RemoteScanElevator(config);
         this.fcfsElevator = new FcfsElevator(config);
         this.sharedRequests = new Set();
         this.emergency = false;
