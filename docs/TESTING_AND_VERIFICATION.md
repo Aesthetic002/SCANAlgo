@@ -80,3 +80,32 @@ Using GTKWave, you can visualize internal signals to debug behavior.
 *   **Stuck in `MOVE`**: Check `travel_counter` vs `FLOOR_TRAVEL_TIME`.
 *   **Door won't close**: Check `door_sensor` or `door_timer`.
 *   **Skipped Floor**: Check `find_next_request` logic or `pending_requests` bitmask.
+
+---
+
+## 5. Interactive Testbench (`backend/tb_interactive.v`)
+
+In addition to the automated testbench, the project includes an **interactive testbench** used by the Python WebSocket backend for real-time control.
+
+### Purpose
+This testbench reads commands from `stdin` and outputs elevator state to `stdout`, enabling the browser to control the Verilog simulation in real-time.
+
+### Commands
+
+| Command | Input     | Description                                  |
+| ------- | --------- | -------------------------------------------- |
+| Step    | `S`       | Run 10 clock cycles, output current state    |
+| Request | `R` + `N` | Assert `req[N]` for floor N (0–7)           |
+| Reset   | `X`       | Assert `reset` for 5 cycles                  |
+| Emergency | `E` + `0/1` | Toggle `emergency` input                  |
+
+### State Output Format
+```
+STATE:%0d|FLOOR:%0d|DIR:%0d|MOTOR:%0d|DOOR:%0d|ALARM:%0d
+```
+
+### Key Implementation Details
+- Requests are asserted with a clock toggle to ensure proper latching by the synchronous FSM.
+- The `%0d` format prevents leading spaces in output, ensuring reliable parsing by the Python backend.
+- The testbench prints `READY` after initialization, signaling to the backend that it can begin sending commands.
+

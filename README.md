@@ -1,58 +1,97 @@
-# Smart Elevator Controller Project Report
+# Smart Elevator Controller — SCAN Scheduling Algorithm
 
-**Ultra-Advanced Elevator Controller using SCAN Scheduling Algorithm**
+**An Industry-Grade 8-Floor Elevator Controller with Verilog HDL, Interactive Web Simulation, and Real-Time Hardware-Software Integration**
 
 ---
 
 ## Table of Contents
-1. [Executive Summary](#executive-summary)
-2. [Project Overview](#project-overview)
-3. [Architecture & Design](#architecture--design)
-4. [SCAN Scheduling Algorithm](#scan-scheduling-algorithm)
-5. [Implementation Details](#implementation-details)
-6. [Safety Features](#safety-features)
-7. [Verification & Testing](#verification--testing)
-8. [Simulation Results](#simulation-results)
-9. [Waveform Analysis](#waveform-analysis)
-10. [Conclusion](#conclusion)
+
+1.  [Executive Summary](#executive-summary)
+2.  [Project Overview](#project-overview)
+3.  [Architecture & Design](#architecture--design)
+4.  [SCAN Scheduling Algorithm](#scan-scheduling-algorithm)
+5.  [Verilog Implementation](#verilog-implementation)
+6.  [Web Frontend & Visualization](#web-frontend--visualization)
+7.  [Verilog-to-Web Backend](#verilog-to-web-backend)
+8.  [Safety Features](#safety-features)
+9.  [Verification & Testing](#verification--testing)
+10. [Deployment](#deployment)
+11. [How to Run](#how-to-run)
+12. [Project Structure](#project-structure)
 
 ---
 
 ## Executive Summary
 
-This project implements an **industry-grade 8-floor smart elevator controller** using Verilog HDL. The design incorporates the **SCAN (Elevator) scheduling algorithm**, hierarchical Finite State Machine (FSM) architecture, comprehensive safety features, and realistic timing models. The system operates in a pure software simulation environment using Icarus Verilog and GTKWave for verification.
+This project implements an **industry-grade 8-floor smart elevator controller** using Verilog HDL. The design incorporates the **SCAN (Elevator) scheduling algorithm**, a hierarchical Finite State Machine (FSM), comprehensive safety features, and realistic timing models.
 
-**Key Innovation**: Unlike simple elevator designs, this controller implements intelligent request scheduling similar to disk scheduling algorithms, optimizing travel efficiency while maintaining safety-critical operation.
+**Key Innovation**: The project features a **dual-mode architecture**:
+- **Hardware Mode**: The Verilog RTL design (`smart_elevator.v`) is the source of truth for elevator logic. A Python WebSocket server bridges the Verilog simulation to a web browser, allowing the *real hardware logic* to drive the visualization in real-time.
+- **Software Mode**: When the Verilog backend is unavailable (e.g., on a hosted deployment), the frontend gracefully falls back to a JavaScript implementation of the same SCAN algorithm.
 
 ---
 
 ## Project Overview
 
 ### Objectives
-- Design a smart elevator controller for 8 floors (0-7)
-- Implement SCAN scheduling algorithm for efficient request handling
-- Create hierarchical FSM with safety priority
+- Design a smart elevator controller for 8 floors (0–7)
+- Implement the SCAN scheduling algorithm for efficient request handling
+- Create a hierarchical FSM with safety priority
 - Include realistic timing models for movement and door operations
 - Implement comprehensive safety features (emergency, overload, obstruction)
-- Develop self-checking testbench for verification
+- Develop a self-checking testbench for verification
+- Build an interactive web visualization comparing SCAN vs FCFS
+- Bridge Verilog simulation to the web via a Python WebSocket backend
 
 ### Specifications
 
-| Parameter | Specification |
-|-----------|--------------|
-| Number of Floors | 8 (Floor 0 to Floor 7) |
-| Scheduling Algorithm | SCAN (Elevator Algorithm) |
-| FSM Architecture | Hierarchical with Safety Priority |
-| Clock Frequency | 100 MHz (10ns period) |
-| Floor Travel Time | 50 clock cycles (500ns) |
-| Door Open Time | 30 clock cycles (300ns) |
-| Door Wait Time | 20 clock cycles (200ns) |
+| Parameter              | Specification                          |
+| ---------------------- | -------------------------------------- |
+| Number of Floors       | 8 (Floor 0 to Floor 7)                |
+| Scheduling Algorithm   | SCAN (Elevator Algorithm)              |
+| FSM Architecture       | Hierarchical with Safety Priority      |
+| Clock Frequency        | 100 MHz (10ns period)                  |
+| Floor Travel Time      | 50 clock cycles (500ns)                |
+| Door Open Time         | 30 clock cycles (300ns)                |
+| Door Wait Time         | 20 clock cycles (200ns)                |
+| Web Frontend           | Vanilla HTML/CSS/JS                    |
+| Backend Bridge         | Python 3 + `asyncio` + `websockets`   |
+| Deployment             | Vercel (static frontend)               |
 
 ---
 
 ## Architecture & Design
 
-### Block Diagram
+### System Architecture
+
+The project operates across three domains:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                     SYSTEM ARCHITECTURE                          │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────────────┐     WebSocket      ┌──────────────────┐   │
+│  │   Web Frontend   │◄──────────────────►│  Python Backend  │   │
+│  │   (Browser)      │   ws://8766        │  (server.py)     │   │
+│  │                  │                    │                  │   │
+│  │  - Landing Page  │                    │  - Compiles .v   │   │
+│  │  - Simulation UI │                    │  - Runs vvp      │   │
+│  │  - SCAN vs FCFS  │                    │  - JSON bridge   │   │
+│  └─────────────────┘                    └────────┬─────────┘   │
+│         │                                         │             │
+│         │ Fallback (no backend)          stdin/stdout            │
+│         ▼                                         ▼             │
+│  ┌─────────────────┐                    ┌──────────────────┐   │
+│  │ JS SCAN Logic   │                    │ Verilog Sim      │   │
+│  │ (ScanElevator)  │                    │ (Icarus Verilog) │   │
+│  │                 │                    │ smart_elevator.v │   │
+│  └─────────────────┘                    │ tb_interactive.v │   │
+│                                          └──────────────────┘   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Verilog Block Diagram
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -61,51 +100,55 @@ This project implements an **industry-grade 8-floor smart elevator controller** 
 │                                                     │
 │  ┌──────────────┐         ┌──────────────┐        │
 │  │   Request    │         │   Safety     │        │
-│  │   Latching   │────────▶│   Priority   │        │
+│  │   Latching   │────────►│   Priority   │        │
 │  │   Logic      │         │   Handler    │        │
 │  └──────────────┘         └──────┬───────┘        │
 │         │                        │                 │
 │         ▼                        ▼                 │
 │  ┌──────────────────────────────────┐             │
 │  │    Hierarchical FSM Controller    │             │
-│  │  - IDLE      - EMERGENCY          │             │
-│  │  - MOVE      - OVERLOAD           │             │
-│  │  - ARRIVE    - DOOR_OPEN          │             │
-│  │  - DOOR_WAIT                      │             │
-│  └────────┬─────────────────┬────────┘             │
-│           │                 │                       │
-│           ▼                 ▼                       │
-│  ┌──────────────┐   ┌──────────────┐              │
-│  │ SCAN Algo    │   │   Timing     │              │
-│  │ Direction    │   │   Control    │              │
-│  │ Logic        │   │   Counters   │              │
-│  └──────────────┘   └──────────────┘              │
-│           │                 │                       │
-│           ▼                 ▼                       │
-│  ┌─────────────────────────────────┐               │
-│  │      Output Control Logic       │               │
-│  │  - Motor    - Door    - Alarm   │               │
-│  └─────────────────────────────────┘               │
-│                                                     │
+│  │  IDLE ─► MOVE ─► ARRIVE          │             │
+│  │  DOOR_OPEN ─► DOOR_WAIT          │             │
+│  │  EMERGENCY / OVERLOAD            │             │
+│  └────────┬─────────────────┬───────┘             │
+│           │                 │                      │
+│           ▼                 ▼                      │
+│  ┌──────────────┐   ┌──────────────┐             │
+│  │ SCAN Algo    │   │   Timing     │             │
+│  │ Direction    │   │   Control    │             │
+│  │ Logic        │   │   Counters   │             │
+│  └──────────────┘   └──────────────┘             │
+│           │                 │                      │
+│           ▼                 ▼                      │
+│  ┌─────────────────────────────────┐              │
+│  │      Output Control Logic       │              │
+│  │  Motor  │  Door  │  Alarm       │              │
+│  └─────────────────────────────────┘              │
 └─────────────────────────────────────────────────────┘
 ```
 
 ### Input/Output Interface
 
 **Inputs:**
-- `clk` - System clock (100 MHz)
-- `reset` - Asynchronous reset (active high)
-- `req[7:0]` - Floor request buttons (one-hot encoded)
-- `emergency` - Emergency stop signal
-- `overload` - Weight overload detector
-- `door_sensor` - Door obstruction sensor
+
+| Signal        | Width | Description                              |
+| ------------- | ----- | ---------------------------------------- |
+| `clk`         | 1-bit | System clock (100 MHz)                   |
+| `reset`       | 1-bit | Asynchronous reset (active high)         |
+| `req[7:0]`    | 8-bit | Floor request buttons (one-hot encoded)  |
+| `emergency`   | 1-bit | Emergency stop signal                    |
+| `overload`    | 1-bit | Weight overload detector                 |
+| `door_sensor` | 1-bit | Door obstruction sensor                  |
 
 **Outputs:**
-- `current_floor[2:0]` - Current floor number (0-7)
-- `direction` - Travel direction (1=UP, 0=DOWN)
-- `motor_enable` - Motor control signal
-- `door_open` - Door state indicator
-- `alarm` - Emergency/overload alarm
+
+| Signal              | Width | Description                        |
+| ------------------- | ----- | ---------------------------------- |
+| `current_floor[2:0]`| 3-bit | Current floor number (0–7)         |
+| `direction`         | 1-bit | Travel direction (1=UP, 0=DOWN)    |
+| `motor_enable`      | 1-bit | Motor control signal               |
+| `door_open`         | 1-bit | Door state indicator               |
+| `alarm`             | 1-bit | Emergency/overload alarm           |
 
 ---
 
@@ -113,472 +156,308 @@ This project implements an **industry-grade 8-floor smart elevator controller** 
 
 ### Algorithm Overview
 
-The SCAN algorithm (also called the Elevator Algorithm) is borrowed from disk scheduling. It operates on a simple principle:
+The SCAN algorithm (also called the **Elevator Algorithm**) is borrowed from disk scheduling. It operates on a simple principle:
 
-**"Continue in the current direction until no more requests exist in that direction, then reverse."**
+> **"Continue in the current direction until no more requests exist in that direction, then reverse."**
 
-### Key Principles
+### How It Works
 
-1. **Unidirectional Service**: Serve all requests in the current direction
-2. **Direction Reversal**: Only reverse when no requests remain ahead
-3. **Efficiency**: Minimizes total travel distance
-4. **Fairness**: Prevents starvation (all requests eventually served)
+1. **Collect Requests** — Multiple floor requests arrive from passengers.
+2. **Choose Direction** — Elevator picks a direction (UP or DOWN) based on pending requests.
+3. **Sweep & Serve** — Serves ALL requests in that direction.
+4. **Reverse** — At the end, reverses direction and repeats.
 
-### Algorithm Implementation
+### SCAN vs FCFS Comparison
 
-```verilog
-// Pseudocode for SCAN Algorithm
-if (direction == UP) {
-    if (has_requests_above(current_floor)) {
-        continue_upward();
-    } else if (has_requests_below(current_floor)) {
-        reverse_to_down();
-    } else {
-        go_idle();
-    }
-}
-```
+| Metric                  | SCAN       | FCFS       |
+| ----------------------- | ---------- | ---------- |
+| Floors Traveled (example)| 7          | 19         |
+| Direction Changes       | 1          | 3          |
+| Efficiency              | ~40% better| Baseline   |
+| Request Starvation      | None       | Possible   |
+| Predictability          | High       | Low        |
 
-### Example Scenario
+### Verilog Implementation
 
-```
-Initial State: Floor 0, Direction = UP
-Requests: Floor 2, 5, 7, 3
+The SCAN logic is implemented via two helper functions in `smart_elevator.v`:
 
-Execution Order:
-1. Floor 0 → Floor 2 (serve)
-2. Floor 2 → Floor 3 (serve)
-3. Floor 3 → Floor 5 (serve)
-4. Floor 5 → Floor 7 (serve)
-5. IDLE (no more requests upward)
-
-If Floor 1 requested while at Floor 3:
-- Continue to Floor 5, 7 first
-- Then reverse and serve Floor 1
-```
-
-### Search Functions
-
-```verilog
-function has_request_above;
-    input [2:0] floor;
-    input [7:0] requests;
-    integer i;
-    begin
-        has_request_above = 0;
-        for (i = floor + 1; i < 8; i = i + 1)
-            if (requests[i])
-                has_request_above = 1;
-    end
-endfunction
-
-function has_request_below;
-    input [2:0] floor;
-    input [7:0] requests;
-    integer i;
-    begin
-        has_request_below = 0;
-        for (i = 0; i < floor; i = i + 1)
-            if (requests[i])
-                has_request_below = 1;
-    end
-endfunction
-```
+- **`has_request_above(floor, requests)`** — Checks if any pending requests exist above the given floor.
+- **`has_request_below(floor, requests)`** — Checks if any pending requests exist below the given floor.
+- **`find_next_request(floor, dir, requests)`** — Finds the nearest request in the current direction.
 
 ---
 
-## Implementation Details
+## Verilog Implementation
 
-### Hierarchical FSM
+### Module: `smart_elevator`
 
-The controller uses a 7-state hierarchical FSM:
+**File:** `smart_elevator.v` (353 lines)
+
+The core RTL module implements:
+
+- **Hierarchical 7-State FSM**: `IDLE → MOVE → ARRIVE → DOOR_OPEN → DOOR_WAIT` (normal flow), with `EMERGENCY` and `OVERLOAD` as priority interrupt states.
+- **Request Latching**: Incoming `req[7:0]` signals are latched into `pending_requests[7:0]`, which persist until served.
+- **SCAN Direction Logic**: Functions `has_request_above`, `has_request_below`, and `find_next_request` implement the sweep algorithm.
+- **Timing Counters**: `travel_counter` and `door_timer` provide realistic timing for floor movement and door operations.
+- **Safety Priority**: Emergency overrides ALL states. Overload pauses operation with door open. Obstruction restarts door timer.
+
+### FSM State Transition Diagram
 
 ```
-┌─────────────────────────────────────────┐
-│         SAFETY PRIORITY LAYER           │
-│  ┌──────────┐         ┌──────────┐     │
-│  │EMERGENCY │         │ OVERLOAD │     │
-│  └────┬─────┘         └────┬─────┘     │
-│       │                    │            │
-│       └────────┬───────────┘            │
-└────────────────┼────────────────────────┘
-                 ▼
-┌─────────────────────────────────────────┐
-│      NORMAL OPERATION LAYER             │
-│                                         │
-│  ┌──────┐    ┌──────┐    ┌────────┐   │
-│  │ IDLE │───▶│ MOVE │───▶│ ARRIVE │   │
-│  └───▲──┘    └──────┘    └───┬────┘   │
-│      │                        │         │
-│      │    ┌──────────┐  ┌─────▼─────┐ │
-│      └────│DOOR_WAIT │◀─│ DOOR_OPEN │ │
-│           └──────────┘  └───────────┘ │
-└─────────────────────────────────────────┘
+     RESET
+       │
+       ▼
+     IDLE ◄──────────────────────┐
+       │                         │
+       │ (request pending)       │ (no more requests)
+       ▼                         │
+     MOVE ──────────────────►  ARRIVE
+       ▲                         │
+       │   (not target floor)    │ (target floor reached)
+       │                         ▼
+       │                     DOOR_OPEN
+       │                         │
+       │                         │ (timer expires)
+       │                         ▼
+       └──────────────────── DOOR_WAIT
+
+  ┌─────────────────────────────────────┐
+  │  EMERGENCY (interrupts ANY state)   │
+  │  OVERLOAD  (pauses with door open)  │
+  └─────────────────────────────────────┘
 ```
 
-**State Descriptions:**
+### Testbenches
 
-| State | Description | Entry Condition | Exit Condition |
-|-------|-------------|----------------|----------------|
-| **IDLE** | Waiting for requests | No pending requests | Request received |
-| **MOVE** | Traveling to next floor | Target floor determined | Reached target floor |
-| **ARRIVE** | Reached target floor | Travel timer expired | Check if stop needed |
-| **DOOR_OPEN** | Door opening/open | At requested floor | Door timer expired |
-| **DOOR_WAIT** | Waiting before closing | Door open timer done | No obstruction + timer |
-| **EMERGENCY** | Emergency stop | Emergency signal | Emergency cleared |
-| **OVERLOAD** | Overload condition | Overload signal | Overload cleared |
+1. **`tb_smart_elevator.v`** — Comprehensive self-checking testbench with 10 test scenarios.
+2. **`backend/tb_interactive.v`** — Interactive testbench that reads commands from stdin and outputs state to stdout, enabling real-time control from the Python backend.
 
-### Request Latching
+---
 
-Requests are latched to ensure no request is lost:
+## Web Frontend & Visualization
 
-```verilog
-always @(posedge clk or posedge reset) begin
-    if (reset)
-        pending_requests <= 8'b0;
-    else begin
-        // Set bit when request arrives
-        pending_requests <= pending_requests | req;
-        
-        // Clear bit when floor is served
-        if (state == DOOR_OPEN)
-            pending_requests[current_floor] <= 1'b0;
-    end
-end
-```
+### Landing Page (`frontend/index.html`)
 
-### Timing Control
+A modern, animated landing page that explains the SCAN algorithm with:
+- Hero section with animated elements and elevator demo
+- Features grid (6 cards explaining SCAN advantages)
+- Side-by-side SCAN vs FCFS comparison with visual path diagrams
+- "How It Works" 4-step explainer
+- Call-to-action linking to the interactive simulation
 
-**Floor Travel Timing:**
-```verilog
-// 50 clock cycles per floor
-if (travel_counter >= FLOOR_TRAVEL_TIME) begin
-    travel_counter <= 0;
-    current_floor <= current_floor + (direction ? 1 : -1);
-end
-```
+### Simulation Page (`frontend/simulation.html`)
 
-**Door Timing:**
-```verilog
-// Door stays open for 30 cycles
-if (door_timer >= DOOR_OPEN_TIME)
-    next_state <= DOOR_WAIT;
-```
+An interactive side-by-side comparison of SCAN vs FCFS elevators:
+- **8-floor elevator shafts** with animated car movement
+- **Floor request buttons** (shared between both elevators)
+- **Real-time statistics**: Floors Traveled, Requests Served, Current State
+- **Comparison bar chart** showing efficiency difference
+- **Emergency button** and **Reset** controls
+- **Random request generator** for quick testing
+
+### JavaScript Architecture
+
+| Class                  | Purpose                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| `BaseElevator`         | Base class with common state machine, timers, UI updates    |
+| `ScanElevator`         | JS implementation of SCAN algorithm (`getNextTarget`)       |
+| `FcfsElevator`         | JS implementation of FCFS algorithm                         |
+| `RemoteScanElevator`   | Connects to Verilog backend via WebSocket; falls back to JS |
+| `ElevatorComparison`   | Controller class managing both elevators and shared UI      |
+
+---
+
+## Verilog-to-Web Backend
+
+### How It Works
+
+The Python backend (`backend/server.py`) bridges the Verilog simulation to the browser:
+
+1. **Compile**: Runs `iverilog` to compile `smart_elevator.v` + `tb_interactive.v` into `sim.vvp`.
+2. **Simulate**: Launches `vvp sim.vvp` as a subprocess with piped stdin/stdout.
+3. **WebSocket Server**: Listens on `ws://0.0.0.0:8766` for browser connections.
+4. **Message Loop**: Translates JSON WebSocket messages into Verilog testbench commands and vice versa.
+
+### Communication Protocol
+
+**Frontend → Backend (JSON over WebSocket):**
+
+| Message Type | Payload                         | Effect                          |
+| ------------ | ------------------------------- | ------------------------------- |
+| `step`       | `{}`                            | Advances Verilog clock 10 cycles|
+| `request`    | `{ floor: 0-7 }`               | Sets `req[floor]` = 1           |
+| `reset`      | `{}`                            | Asserts `reset` signal          |
+| `emergency`  | `{ value: true/false }`         | Toggles `emergency` input       |
+
+**Backend → Frontend (JSON over WebSocket):**
+
+| Field    | Type | Description                                |
+| -------- | ---- | ------------------------------------------ |
+| `STATE`  | int  | FSM state (0=IDLE, 1=MOVE, 3=DOOR_OPEN…)  |
+| `FLOOR`  | int  | Current floor (0–7)                        |
+| `DIR`    | int  | Direction (1=UP, 0=DOWN)                   |
+| `MOTOR`  | int  | Motor enable                               |
+| `DOOR`   | int  | Door open                                  |
+| `ALARM`  | int  | Alarm active                               |
+
+### Fallback Mechanism
+
+When the backend is unavailable (e.g., on Vercel):
+1. `RemoteScanElevator` attempts WebSocket connection.
+2. After **2 failed attempts** (~4 seconds), it activates **fallback mode**.
+3. In fallback mode, all methods delegate to `BaseElevator` + the built-in `getNextTarget()` SCAN logic.
+4. The user sees no difference — both modes use the same SCAN algorithm.
 
 ---
 
 ## Safety Features
 
-### 1. Emergency Stop (Highest Priority)
+| Feature                | Priority | Behavior                                        |
+| ---------------------- | -------- | ----------------------------------------------- |
+| **Emergency Stop**     | Highest  | Immediately halts at current floor, opens doors, sounds alarm |
+| **Overload Detection** | High     | Pauses operation, keeps doors open until resolved|
+| **Door Obstruction**   | Medium   | Restarts door timer, prevents closing on obstacle|
 
-**Behavior:**
-- Immediately stops motor
-- Activates alarm
-- Ignores all other inputs
-- Clears when emergency signal deasserted
-
-**Implementation:**
-```verilog
-if (emergency) begin
-    next_state = EMERGENCY;
-    motor_enable = 0;
-    alarm = 1;
-end
-```
-
-### 2. Overload Detection
-
-**Behavior:**
-- Prevents movement when overloaded
-- Keeps door open
-- Activates alarm
-- Clears when weight reduced
-
-### 3. Door Obstruction
-
-**Behavior:**
-- Detects obstruction via door_sensor
-- Reopens door if closing
-- Resets door timer
-- Prevents passenger injury
-
-**Implementation:**
-```verilog
-DOOR_WAIT: begin
-    if (door_sensor) begin
-        next_state = DOOR_OPEN;  // Reopen door
-        door_timer <= 0;         // Reset timer
-    end
-end
-```
-
-### Safety Priority Hierarchy
-
-```
-1. EMERGENCY (Highest)
-   ↓
-2. OVERLOAD
-   ↓
-3. DOOR OBSTRUCTION
-   ↓
-4. NORMAL OPERATION (Lowest)
-```
+All safety features are implemented in both the Verilog module and the JavaScript fallback.
 
 ---
 
 ## Verification & Testing
 
-### Testbench Architecture
+### Automated Testbench (`tb_smart_elevator.v`)
 
-The self-checking testbench includes:
+10 comprehensive test scenarios:
 
-1. **Clock Generation** - 100 MHz system clock
-2. **Reset Sequencing** - Proper initialization
-3. **Test Helper Tasks** - Reusable test functions
-4. **Automatic Checking** - Pass/fail verification
-5. **State Monitoring** - Real-time state display
-6. **VCD Dump** - Waveform generation
+1. Reset & Initialization
+2. Single Floor Request (Upward)
+3. Multiple Upward Requests (SCAN order)
+4. Direction Reversal
+5. Mixed Requests (Complete SCAN cycle)
+6. Emergency During Motion
+7. Door Obstruction
+8. Overload Detection
+9. Current Floor Request
+10. Stress Test (All Floors Simultaneously)
 
-### Test Coverage
+### Running Simulation
 
-| Test # | Test Case | Purpose |
-|--------|-----------|---------|
-| 1 | Reset & Initialization | Verify proper startup |
-| 2 | Single Floor Request | Basic upward movement |
-| 3 | Multiple Upward Requests | SCAN algorithm (same direction) |
-| 4 | Direction Reversal | SCAN reversal logic |
-| 5 | Mixed Requests | Complete SCAN cycle |
-| 6 | Emergency During Motion | Safety interrupt |
-| 7 | Door Obstruction | Safety handling |
-| 8 | Overload Detection | Weight safety |
-| 9 | Current Floor Request | Edge case handling |
-| 10 | Stress Test | Multiple simultaneous requests |
-
-### Test Results Example
-
-```
-==============================================================================
-   Smart Elevator Controller - Comprehensive Testbench
-==============================================================================
-Testing: SCAN Algorithm, Safety Features, Timing, Direction Reversal
-==============================================================================
-
-[PASS] Test 1: After reset, elevator at floor 0
-[PASS] Test 2: After reset, all outputs inactive
-[PASS] Test 3: Motor enabled when moving to floor 3
-[PASS] Test 4: Elevator reached floor 3
-...
-==============================================================================
-   Test Summary
-==============================================================================
-Total Tests: 25
-Passed:      25
-Failed:      0
-==============================================================================
-
-*** ALL TESTS PASSED! *** ✓
-```
-
----
-
-## Simulation Results
-
-### How to Run Simulation
-
-**Windows (PowerShell):**
-```powershell
+```bash
+# Windows (PowerShell)
 .\run_sim.ps1
-```
 
-**Linux/Mac:**
-```bash
-chmod +x run_sim.sh
+# Windows (CMD)
+run_sim.bat
+
+# Linux/Mac
 ./run_sim.sh
-```
-
-**Manual Compilation:**
-```bash
-iverilog -o elevator_sim smart_elevator.v tb_smart_elevator.v
-vvp elevator_sim
-gtkwave elevator_waveform.vcd
 ```
 
 ### Expected Output
 
 ```
-====================================================================
-  Smart Elevator Controller - Simulation Script (Windows)
-====================================================================
-
-[1/3] Compiling Verilog files...
-✓ Compilation successful
-
-[2/3] Running simulation...
-
---- TEST 1: Reset and Initialization ---
-[PASS] Test 1: After reset, elevator at floor 0
-[PASS] Test 2: After reset, all outputs inactive
-
---- TEST 2: Single Floor Request (Upward) ---
-Requesting floor 3...
-[10 ns] State: IDLE -> MOVE | Floor: 0 | Dir: UP | Motor: 1
-[520 ns] State: MOVE -> ARRIVE | Floor: 1 | Dir: UP | Motor: 0
+[INFO] Starting simulation...
+[TEST 1] Reset & Initialization - PASS
+[TEST 2] Single Floor Request - PASS
 ...
-
-✓ Simulation completed
-
-[3/3] Waveform generated: elevator_waveform.vcd
-====================================================================
+*** ALL TESTS PASSED! ***
 ```
 
 ---
 
-## Waveform Analysis
+## Deployment
 
-### Key Signals to Observe
+### Vercel (Static Frontend)
 
-**1. State Transitions**
-- Observe FSM state changes
-- Verify proper sequencing: IDLE → MOVE → ARRIVE → DOOR_OPEN → DOOR_WAIT
+The `frontend/` directory is deployed to Vercel as a static site.
 
-**2. SCAN Algorithm**
-- Watch direction signal
-- Verify direction reversal only after all requests served
-- Confirm sequential floor service in same direction
+- **Root Directory**: `frontend`
+- **Configuration**: `frontend/vercel.json`
+- **GitHub Repo**: [Aesthetic002/SCANAlgo](https://github.com/Aesthetic002/SCANAlgo)
 
-**3. Timing**
-- Floor travel: 50 clock cycles between floors
-- Door open: 30 clock cycles
-- Door wait: 20 clock cycles
+On Vercel, the SCAN elevator runs in **JavaScript fallback mode** (no Verilog backend).
 
-**4. Safety Features**
-- Emergency immediately stops motor
-- Overload prevents movement
-- Door obstruction reopens door
+### Local (with Verilog Backend)
 
-### GTKWave Tips
-
-1. Add signals in this order for clarity:
-   ```
-   - clk
-   - reset
-   - req[7:0]
-   - current_floor[2:0]
-   - direction
-   - state[3:0]
-   - motor_enable
-   - door_open
-   - alarm
-   ```
-
-2. Use color coding:
-   - Red: Safety signals (emergency, overload, alarm)
-   - Green: Normal operation (motor_enable)
-   - Blue: State signals
-
-3. Add markers at state transitions
+When running locally with `python backend/server.py`, the SCAN elevator is driven by the **real Verilog simulation** via WebSocket.
 
 ---
 
-## Conclusion
+## How to Run
 
-### Project Achievements
+### Prerequisites
 
-✅ **SCAN Algorithm**: Successfully implemented efficient request scheduling  
-✅ **Hierarchical FSM**: Clean separation of safety and normal operation  
-✅ **Safety Features**: Emergency, overload, and obstruction handling  
-✅ **Realistic Timing**: Accurate floor travel and door operation models  
-✅ **Comprehensive Testing**: 10 test scenarios, 25+ individual checks  
-✅ **Industry-Grade**: Production-quality RTL design patterns  
+- **Icarus Verilog** (for Verilog simulation): [Download](http://bleyer.org/icarus/)
+- **Python 3.8+** with `websockets` library: `pip install websockets`
+- A modern web browser
 
-### Key Learnings
+### Quick Start
 
-1. **Algorithmic Thinking in Hardware**: SCAN algorithm shows how software algorithms translate to hardware
-2. **FSM Design**: Hierarchical states enable clean safety priority handling
-3. **Verification**: Self-checking testbenches catch bugs early
-4. **Timing**: Real-world systems need accurate timing models
+```bash
+# 1. Start the Verilog backend
+python backend/server.py
 
-### Real-World Applications
+# 2. Open the frontend in a browser
+# Navigate to frontend/index.html (landing page)
+# Or frontend/simulation.html (simulation directly)
 
-- **Building Elevators**: Actual elevator controllers use similar algorithms
-- **Disk Scheduling**: SCAN is widely used in hard disk controllers
-- **Resource Management**: Principles apply to any queued resource system
-- **Safety-Critical Systems**: Priority-based FSM used in automotive, medical devices
+# 3. Click floor buttons and watch both elevators!
+```
 
-### Future Enhancements
+### Running Without Backend
 
-- [ ] Multi-elevator coordination
-- [ ] Power optimization (sleep states)
-- [ ] Predictive scheduling (AI/ML)
-- [ ] FPGA implementation with physical I/O
-- [ ] Energy regeneration during descent
-- [ ] Advanced diagnostics and logging
+Simply open `frontend/index.html` in a browser. The SCAN elevator will automatically fall back to JavaScript logic after ~4 seconds.
 
 ---
 
-## File Structure
+## Project Structure
 
 ```
 ADLD_EL/
-├── smart_elevator.v           # RTL design (main module)
-├── tb_smart_elevator.v        # Self-checking testbench
-├── run_sim.sh                 # Linux/Mac simulation script
-├── run_sim.ps1                # Windows simulation script
-├── README.md                  # This document
-├── VIVA_GUIDE.md              # Viva preparation
-└── Presentation.md            # PowerPoint content
+├── smart_elevator.v              # Core Verilog RTL module (353 lines)
+├── tb_smart_elevator.v           # Self-checking testbench (10 scenarios)
+├── README.md                     # This file — main project documentation
+│
+├── backend/
+│   ├── server.py                 # Python WebSocket server (Verilog bridge)
+│   └── tb_interactive.v          # Interactive testbench for real-time control
+│
+├── frontend/
+│   ├── index.html                # Landing page
+│   ├── simulation.html           # Interactive simulation page
+│   ├── elevator.js               # Elevator logic (SCAN, FCFS, Remote)
+│   ├── landing.js                # Landing page animations
+│   ├── styles.css                # Simulation page styles
+│   ├── landing.css               # Landing page styles
+│   └── vercel.json               # Vercel deployment configuration
+│
+├── docs/                         # Detailed documentation
+│   ├── README.md                 # Documentation index
+│   ├── SYSTEM_ARCHITECTURE.md    # Architecture overview
+│   ├── HARDWARE_DESIGN.md        # Verilog module details
+│   ├── ALGORITHMS.md             # SCAN vs FCFS comparison
+│   ├── FRONTEND_DOCUMENTATION.md # Web frontend details
+│   ├── TESTING_AND_VERIFICATION.md # Test scenarios
+│   ├── RUNNING_VERILOG_BACKEND.md  # Backend setup guide
+│   └── VERILOG_TO_WEB_GUIDE.md   # Integration architecture
+│
+├── run_sim.ps1                   # Windows PowerShell simulation script
+├── run_sim.bat                   # Windows CMD simulation script
+├── run_sim.sh                    # Linux/Mac simulation script
+│
+├── VIVA_GUIDE.md                 # Viva Q&A preparation (60 questions)
+├── Presentation.md               # Presentation slide content
+├── QUICK_START.md                # Quick start reference
+└── .gitignore
 ```
 
 ---
 
 ## References
 
-1. **SCAN Algorithm**: Denning, P. J. (1967). "Effects of scheduling on file memory operations"
-2. **FSM Design**: Brown, S., Vranesic, Z. (2014). "Fundamentals of Digital Logic with Verilog Design"
-3. **Verilog HDL**: Palnitkar, S. (2003). "Verilog HDL: A Guide to Digital Design and Synthesis"
-4. **Safety-Critical Systems**: Storey, N. (1996). "Safety-Critical Computer Systems"
+1. A. S. Tanenbaum, "Modern Operating Systems," 4th ed., Pearson, 2014. (SCAN/Elevator Algorithm)
+2. D. Thomas and P. Moorby, "The Verilog Hardware Description Language," Springer, 2002.
+3. IEEE Standard 1364-2005, "IEEE Standard for Verilog Hardware Description Language."
 
 ---
 
-## Appendix A: Complete Code Listings
-
-See separate files:
-- `smart_elevator.v` - Main RTL design
-- `tb_smart_elevator.v` - Testbench with all test cases
-
----
-
-## Appendix B: Simulation Instructions
-
-### Installing Icarus Verilog
-
-**Windows:**
-1. Download from: http://bleyer.org/icarus/
-2. Run installer
-3. Add to PATH
-
-**Linux:**
-```bash
-sudo apt-get install iverilog gtkwave
-```
-
-**Mac:**
-```bash
-brew install icarus-verilog gtkwave
-```
-
-### Online Alternatives
-
-If you cannot install locally:
-- **EDA Playground**: https://www.edaplayground.com/
-- **Icarus Verilog Online**: https://www.tutorialspoint.com/compile_verilog_online.php
-
----
-
-**Project Completion Date**: January 18, 2026  
-**Author**: Digital IC Design Team  
-**Course**: Advanced Digital Logic Design  
-
----
-
-*"This project demonstrates that hardware design is not just about gates and wires—it's about algorithms, architecture, and solving real-world problems with silicon."*
+*Built as an Advanced Digital Logic Design (ADLD) project — demonstrating the SCAN scheduling algorithm from algorithm to architecture.*

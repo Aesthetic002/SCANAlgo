@@ -1,99 +1,88 @@
 # System Architecture
 
 ## Overview
-The **Smart Elevator Controller** project is a multi-faceted system designed to demonstrate advanced digital logic design principles and algorithmic scheduling. The architecture is divided into two primary domains:
 
-1.  **Hardware Domain (RTL)**: The core industry-grade design implemented in Verilog HDL, targeting FPGA synthesis and hardware simulation.
-2.  **Software/Frontend Domain (Web)**: An interactive web-based simulation and visualization platform that allows users to understand the SCAN algorithm's efficiency compared to traditional methods.
+The **Smart Elevator Controller** is a multi-domain system demonstrating advanced digital logic design and real-time hardware-software integration. The architecture spans three domains:
 
-These two domains exist in parallel:
-*   The **Hardware** implementation is the "source of truth" for digital logic, timing, and safety/critical systems.
-*   The **Frontend** implementation serves as a visualizer and educational tool to demonstrate the algorithmic behavior in a user-friendly manner.
+1. **Hardware Domain (Verilog RTL)** — The core elevator controller implemented in synthesizable Verilog HDL.
+2. **Backend Domain (Python)** — A WebSocket server that bridges the Verilog simulation to the browser.
+3. **Frontend Domain (Web)** — An interactive visualization and comparison tool built with HTML/CSS/JavaScript.
 
----
+## Architecture Diagram
 
-## 1. Hardware Architecture (Verilog HDL)
-
-The hardware architecture is designed around a **Hierarchical Finite State Machine (FSM)** that separates high-level safety logic from low-level operational logic.
-
-### Block Diagram
-```mermaid
-graph TD
-    subgraph "Inputs"
-        CLK[Clock (100MHz)]
-        RST[Reset]
-        REQ[Floor Requests 0-7]
-        SENSORS[Safety Sensors]
-    end
-
-    subgraph "Core Logic"
-        RL[Request Latching]
-        SCAN[SCAN Algorithm Logic]
-        FSM[Hierarchical FSM]
-    end
-
-    subgraph "Outputs"
-        MOTOR[Motor Control]
-        DOOR[Door Control]
-        ALARM[Safety Alarm]
-        STATE[Status Indicators]
-    end
-
-    CLK --> FSM
-    RST --> FSM
-    REQ --> RL --> SCAN
-    SENSORS --> FSM
-    
-    SCAN --> FSM
-    FSM --> MOTOR
-    FSM --> DOOR
-    FSM --> ALARM
-    FSM --> STATE
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    USER'S BROWSER                           │
+│                                                             │
+│  ┌──────────────┐     ┌────────────────────────────────┐   │
+│  │ Landing Page  │────►│ Simulation Page                │   │
+│  │ index.html    │     │ simulation.html                │   │
+│  │ landing.css   │     │ styles.css + elevator.js       │   │
+│  │ landing.js    │     │                                │   │
+│  └──────────────┘     │  ┌──────────┐  ┌──────────┐   │   │
+│                        │  │ SCAN     │  │ FCFS     │   │   │
+│                        │  │ Elevator │  │ Elevator │   │   │
+│                        │  └────┬─────┘  └──────────┘   │   │
+│                        └───────┼────────────────────────┘   │
+│                                │                            │
+│              WebSocket (ws://localhost:8766)                 │
+│              OR JavaScript fallback                         │
+└────────────────────────────────┼────────────────────────────┘
+                                 │
+┌────────────────────────────────┼────────────────────────────┐
+│              PYTHON BACKEND (server.py)                     │
+│                                │                            │
+│  ┌────────────────┐   ┌───────┴────────┐                   │
+│  │ WebSocket      │   │ JSON ↔ Command │                   │
+│  │ Server         │──►│ Translator     │                   │
+│  │ (asyncio)      │   │                │                   │
+│  └────────────────┘   └───────┬────────┘                   │
+│                               │ stdin/stdout               │
+│                      ┌────────┴────────┐                   │
+│                      │ vvp sim.vvp     │                   │
+│                      │ (Icarus Verilog)│                   │
+│                      └────────┬────────┘                   │
+└───────────────────────────────┼─────────────────────────────┘
+                                │
+┌───────────────────────────────┼─────────────────────────────┐
+│              VERILOG SIMULATION                             │
+│                               │                             │
+│  ┌────────────────────────────┴────────────────────────┐   │
+│  │              tb_interactive.v                        │   │
+│  │  Reads commands from stdin (R=Request, S=Step, etc.) │   │
+│  │  Outputs STATE:X|FLOOR:Y|DIR:Z|... to stdout        │   │
+│  └────────────────────────────┬────────────────────────┘   │
+│                               │                             │
+│  ┌────────────────────────────┴────────────────────────┐   │
+│  │              smart_elevator.v                        │   │
+│  │  Core FSM + SCAN algorithm + Safety logic           │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Key Components
-*   **Request Latching Module**: Asynchronously captures floor requests to ensure no button press is missed, even if the system is busy.
-*   **Safety Priority Logic**: A combinatorial logic block that overrides normal operation when safety inputs (Emergency, Overload, Obstruction) are active.
-*   **SCAN Direction Logic**: Implements the "Elevator Algorithm" to determine the optimal direction of travel based on current position and pending requests.
-*   **Hierarchical FSM**:
-    *   **Upper Layer**: Handles Safety (`EMERGENCY`, `OVERLOAD`).
-    *   **Lower Layer**: Handles Operation (`IDLE`, `MOVE`, `DOOR_OPEN`, `DOOR_WAIT`).
+## Data Flow
 
----
+### Local Mode (with Backend)
 
-## 2. Frontend Architecture (Web Simulation)
+1. User clicks a floor button in the browser.
+2. `RemoteScanElevator` sends `{ type: "request", floor: X }` via WebSocket.
+3. `server.py` receives the JSON message.
+4. Python writes `RX` (Request command + floor digit) to `vvp`'s stdin.
+5. On next `step` command, Python writes `S` to stdin.
+6. `tb_interactive.v` runs 10 clock cycles and outputs `STATE:X|FLOOR:Y|...` to stdout.
+7. Python reads stdout, parses the state, and sends it back as JSON over WebSocket.
+8. `updateStateFromBackend()` updates the DOM — elevator position, stats, indicators.
 
-The frontend is a modern web application built with HTML5, CSS3, and Vanilla JavaScript. It implements an Object-Oriented simulation engine to visualize functionality.
+### Deployed Mode (Vercel, no Backend)
 
-### Class Structure
-The JavaScript simulation is built on a modular class structure:
+1. `RemoteScanElevator` attempts WebSocket connection.
+2. After 2 failed attempts, `activateFallback()` is called.
+3. All methods now delegate to `BaseElevator` + `getNextTarget()` (JS SCAN logic).
+4. The elevator operates identically using JavaScript instead of Verilog.
 
-*   **`BaseElevator`**: Abstract base class defining common properties (current floor, direction, state) and methods (`move`, `openDoor`).
-*   **`ScanElevator` (extends Base)**: Implements the specific `getNextTarget()` logic using the SCAN algorithm (same logic as hardware).
-*   **`FcfsElevator` (extends Base)**: Implements First-Come-First-Served logic for comparison purposes.
-*   **`ElevatorComparison`**: The main controller class that manages the DOM, event listeners, and runs the simulation loop.
+## Design Principles
 
-### Visualization Pipeline
-1.  **User Input**: Clicks on floor buttons request a floor.
-2.  **State Update**: The JS engine adds the request to queues for both SCAN and FCFS elevators.
-3.  **Simulation Loop**:
-    *   Updates elevator positions.
-    *   Manages timers (door open/close, travel time).
-    *   Updates the DOS (Document Object Model) to reflect state changes (animations, lights).
-4.  **Real-Time Comparison**: Calculates and displays efficiency metrics (floors traversed) to prove the superiority of the SCAN algorithm.
-
----
-
-## 3. Data Flow & Logic Parity
-
-While the implementation languages differ (Verilog vs. JavaScript), the **Algorithmic Logic** is identical.
-
-| Feature | Hardware (Verilog) | Frontend (JS) |
-| :--- | :--- | :--- |
-| **State Machine** | `case(state)` statement | `switch(this.state)` inside `processNextState()` |
-| **Direction Logic** | `find_next_request` function | `getNextTarget()` method |
-| **Timing** | Clock cycle counters | `setTimeout` delays |
-| **Concurrency** | Parallel hardware blocks | Async event loop |
-
-### System Integrity
-The system ensures that the visualization accurately represents the hardware's theoretical performance. The frontend serves as a "Digital Twin" behaviorally, even though it does not physically simulate the Verilog netlist.
+- **Verilog is the Source of Truth**: The hardware design (`smart_elevator.v`) defines the correct elevator behavior. The JavaScript fallback mirrors this logic.
+- **Clean Separation**: Each domain is independent. The frontend doesn't know or care if it's talking to Verilog or JavaScript.
+- **Graceful Degradation**: The system works with or without the backend. No error messages or broken UI on Vercel.
+- **Real-Time Bridge**: The WebSocket protocol is lightweight and low-latency, enabling smooth real-time visualization of the Verilog simulation.
